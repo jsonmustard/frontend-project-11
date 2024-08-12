@@ -1,5 +1,7 @@
 import onChange from 'on-change';
-import validate from './validation';
+import i18next from 'i18next';
+import validate from './validation.js';
+import ru from './locales/ru.js';
 
 const app = async () => {
   const state = {
@@ -13,7 +15,7 @@ const app = async () => {
   const submitButtonElement = document.getElementById('submit-button');
   const feedbackMessageElement = document.getElementById('feedback-message');
 
-  const watchedState = onChange(state, (path, value, previousValue) => {
+  const watchedState = onChange(state, (path, value) => {
     console.log(path);
     switch (path) {
       case 'ui.url':
@@ -43,9 +45,21 @@ const app = async () => {
         watchedState.ui.error = '';
       })
       .catch((err) => {
-        watchedState.ui.error = err.errors;
+        watchedState.ui.error = i18next.t(`form.validation.error.${err.errors}`);
       });
   });
 };
 
-export default app;
+const runApp = async () => {
+  await i18next.init({
+    lng: 'ru',
+    debug: true,
+    resources: {
+      ru,
+    },
+  });
+
+  app();
+};
+
+export default runApp;

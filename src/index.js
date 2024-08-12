@@ -1,7 +1,5 @@
 import './styles.scss';
 import 'bootstrap';
-import app from './validation/onChange';
+import runApp from './application.js';
 
-console.log('Hello World!');
-
-app();
+runApp();

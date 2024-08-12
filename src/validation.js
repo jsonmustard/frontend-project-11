@@ -4,7 +4,7 @@ import {
 
 setLocale({
   string: {
-    url: 'Ссылка должна быть валидным URL',
+    url: 'invalidUrl',
   },
 });
 
