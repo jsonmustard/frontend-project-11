@@ -9,12 +9,17 @@ const submitButtonElement = document.getElementById('submit-button');
 
 const getXml = (url) => fetch(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
   .then((response) => {
-    if (response.ok) return response.json();
+    if (response.ok) {
+      return response.json();
+    }
+    return Promise.reject(new Error('Failed to fetch data'));
+  })
+  .then((data) => data.contents)
+  .catch(() => {
     const error = new Error('networkError');
     error.errors = 'networkError';
     throw error;
-  })
-  .then((data) => data.contents);
+  });
 
 const parseXml = (xmlString) => {
   const parser = new DOMParser();
