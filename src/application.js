@@ -1,90 +1,103 @@
-import onChange from 'on-change';
 import i18next from 'i18next';
 import _ from 'lodash';
 import validate from './validation.js';
 import ru from './locales/ru.js';
+import watchedState from './watcher.js';
 
-const app = async () => {
-  const state = {
-    url: '',
-    feedback: '',
-    rss: {},
-    feeds: [],
-    posts: [],
-  };
+const app = () => {
+  const inputUrlElement = document.getElementById('url-input');
 
-  const urlInputElement = document.getElementById('url-input');
-  const submitButtonElement = document.getElementById('submit-button');
-  const feedbackMessageElement = document.getElementById('feedback-message');
-
-  const watchedState = onChange(state, (path, value) => {
-    // console.log(path);
-    switch (path) {
-      case 'url':
-        break;
-      case 'feedback':
-        feedbackMessageElement.textContent = i18next.t(`form.${path}.${value}`);
-        // console.log(value);
-        if (value === 'success') {
-          urlInputElement.classList.remove('is-invalid');
-          feedbackMessageElement.classList.remove('text-danger');
-          feedbackMessageElement.classList.add('text-success');
-        } else {
-          urlInputElement.classList.add('is-invalid');
-          feedbackMessageElement.classList.add('text-danger');
-          feedbackMessageElement.classList.remove('text-success');
-        }
-        break;
-      default:
-        // console.log('error');
-    }
+  inputUrlElement.addEventListener('change', () => {
+    watchedState.url = inputUrlElement.value;
   });
 
-  urlInputElement.addEventListener('change', () => {
-    watchedState.url = urlInputElement.value;
-  });
-
-  const getXml = (url) => fetch(`https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}`)
+  const getXml = (url) => fetch(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
     .then((response) => {
       if (response.ok) return response.json();
-      throw new Error('Network response was not ok.');
+      const error = new Error('networkError');
+      error.errors = 'networkError';
+      throw error;
     })
     .then((data) => data.contents);
 
   const parseXml = (xmlString) => {
     const parser = new DOMParser();
     const feedId = _.uniqueId();
-    const feed = parser.parseFromString(xmlString, 'text/xml');
-    const feedTitle = feed.querySelector('title').textContent;
-    const feedDescription = feed.querySelector('description').textContent;
+    const parsedXml = parser.parseFromString(xmlString, 'text/xml');
 
-    const feedItem = {
+    const isError = parsedXml.querySelector('parsererror');
+
+    // if (isError) {
+    //   const error = new Error('invalidRss');
+    //   error.errors = 'invalidRss';
+    //   throw error;
+    // }
+
+    const posts = Array.from(parsedXml.querySelectorAll('item'))
+      .map((post) => ({
+        id: _.uniqueId(),
+        feedId,
+        title: post.querySelector('title').textContent,
+        description: post.querySelector('description').textContent,
+        link: post.querySelector('link').textContent,
+        pubDate: new Date(post.querySelector('pubDate').textContent),
+      }));
+
+    const pubDates = posts.map((post) => post.pubDate);
+
+    const latestPubDate = Math.max(...pubDates);
+
+    const feedTitle = parsedXml.querySelector('title').textContent;
+    const feedDescription = parsedXml.querySelector('description').textContent;
+
+    const feed = {
       id: feedId,
       url: watchedState.url,
       title: feedTitle,
       description: feedDescription,
+      latestPubDate,
     };
 
-    watchedState.feeds.push(feedItem);
-
-    const items = Array.from(feed.querySelectorAll('item'));
-
-    items.map((post) => watchedState.posts.push({
-      id: _.uniqueId(),
-      feedId,
-      title: post.querySelector('title').textContent,
-      description: post.querySelector('description').textContent,
-      link: post.querySelector('link').textContent,
-    }));
+    return {
+      feed,
+      posts,
+    };
   };
 
+  const handleUrl = (url) => getXml(url)
+    .then((data) => {
+      const parsedData = parseXml(data);
+
+      const feedToUpdate = watchedState.feeds.find((feed) => feed.url === url);
+
+      if (feedToUpdate) {
+        const currentLatestPubDate = feedToUpdate.latestPubDate;
+        feedToUpdate.latestPubDate = parsedData.feed.latestPubDate;
+
+        const newPosts = parsedData.posts.filter((post) => post.pubDate > currentLatestPubDate);
+        if (newPosts.length !== 0) {
+          watchedState.posts.push(...newPosts);
+        }
+      } else {
+        watchedState.feeds.push(parsedData.feed);
+        watchedState.posts.push(...parsedData.posts);
+      }
+
+      watchedState.feedback = 'success';
+      watchedState.url = '';
+    });
+
   const render = () => {
+    inputUrlElement.value = watchedState.url;
+    inputUrlElement.focus();
+
     const fillFeedsContainer = () => {
-      const feedsContained = document.querySelector('.feeds');
+      const feedsContainer = document.querySelector('.feeds');
+      feedsContainer.innerHTML = '';
 
       const divCard = document.createElement('div');
       divCard.className = 'card border-0';
-      feedsContained.appendChild(divCard);
+      feedsContainer.appendChild(divCard);
 
       const divCardBody = document.createElement('div');
       divCardBody.className = 'card-body';
@@ -98,7 +111,7 @@ const app = async () => {
       const ul = document.createElement('ul');
       ul.className = 'list-group border-0 rounded-0';
       divCard.appendChild(ul);
-      state.feeds.forEach((feed) => {
+      watchedState.feeds.forEach((feed) => {
         const li = document.createElement('li');
         li.className = 'list-group-item border-0 border-end-0';
 
@@ -118,6 +131,7 @@ const app = async () => {
 
     const fillPostsContainer = () => {
       const postsContainer = document.querySelector('.posts');
+      postsContainer.innerHTML = '';
 
       const divCard = document.createElement('div');
       divCard.className = 'card border-0';
@@ -136,7 +150,7 @@ const app = async () => {
       ul.className = 'list-group border-0 rounded-0';
       divCard.appendChild(ul);
 
-      state.posts.forEach((post) => {
+      watchedState.posts.forEach((post) => {
         const li = document.createElement('li');
         li.className = 'list-group-item d-flex justify-content-between align-items-start border-0 border-end-0';
 
@@ -151,12 +165,10 @@ const app = async () => {
 
         const fillModal = (e) => {
           const postId = e.target.dataset.id;
-          console.log(postId);
-          console.log(state.posts);
           const titleElement = document.querySelector('.modal-title');
           const bodyElement = document.querySelector('.modal-body');
           const linkElement = document.querySelector('.modal-footer > a');
-          const { title, description, link } = state.posts.find((i) => i.id === postId);
+          const { title, description, link } = watchedState.posts.find((i) => i.id === postId);
           titleElement.textContent = title;
           bodyElement.textContent = description;
           linkElement.href = link;
@@ -182,8 +194,30 @@ const app = async () => {
     fillPostsContainer();
   };
 
+  const feedUpdater = () => {
+    const promises = watchedState.feeds.map((feed) => handleUrl(feed.url));
+    Promise.all(promises)
+      .then(() => {
+        if (watchedState.feeds.length !== 0) {
+          render();
+        }
+      })
+      .then(() => setTimeout(() => feedUpdater(), 5000));
+  };
+
+  setTimeout(() => feedUpdater(), 5000);
+
+  const submitButtonElement = document.getElementById('submit-button');
+
   submitButtonElement.addEventListener('click', async (e) => {
+    if (watchedState.url === '') {
+      return;
+    }
+
     e.preventDefault();
+
+    inputUrlElement.setAttribute('disabled', '');
+    submitButtonElement.setAttribute('disabled', '');
 
     validate(watchedState.url)
       .then(() => {
@@ -193,24 +227,22 @@ const app = async () => {
           throw error;
         }
       })
-      .then(() => getXml(watchedState.url))
-      .then((data) => {
-        parseXml(data);
-        watchedState.feedback = 'success';
-        render();
-      })
-      .catch((err) => {
-        watchedState.url = '';
-        console.log(err.message);
-        watchedState.feedback = err.errors;
+      .then(() => handleUrl(watchedState.url))
+      .then(() => render())
+      // .catch((err) => {
+      //   watchedState.feedback = err.errors;
+      // })
+      .finally(() => {
+        inputUrlElement.removeAttribute('disabled');
+        submitButtonElement.removeAttribute('disabled');
       });
   });
 };
 
-const runApp = async () => {
-  await i18next.init({
+const runApp = () => {
+  i18next.init({
     lng: 'ru',
-    debug: true,
+    debug: false,
     resources: {
       ru,
     },

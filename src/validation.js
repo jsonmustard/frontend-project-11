@@ -5,14 +5,14 @@ import {
 setLocale({
   string: {
     url: 'invalidUrl',
+
   },
 });
 
-export default async (url) => {
+export default (url) => {
   const userSchema = object({
-    website: string().url().nullable(),
+    website: string().url(),
   });
 
-  const website = await userSchema.validate({ website: url });
-  return website;
+  return userSchema.validate({ website: url });
 };
