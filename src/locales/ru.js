@@ -1,13 +1,11 @@
 export default {
   translation: {
     form: {
-      validation: {
+      feedback: {
         success: 'RSS успешно загружен',
-        error: {
-          duplication: 'RSS уже существует',
-          invalidRss: 'Ресурс не содержит валидный RSS',
-          invalidUrl: 'Ссылка должна быть валидным URL',
-        },
+        duplication: 'RSS уже существует',
+        invalidRss: 'Ресурс не содержит валидный RSS',
+        invalidUrl: 'Ссылка должна быть валидным URL',
       },
     },
     board: {
