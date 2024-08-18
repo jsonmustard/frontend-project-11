@@ -42,6 +42,7 @@ const parseXml = (xmlString) => {
       description: post.querySelector('description').textContent,
       link: post.querySelector('link').textContent,
       pubDate: new Date(post.querySelector('pubDate').textContent),
+      isRead: false,
     }));
 
   const pubDates = posts.map((post) => post.pubDate);
@@ -157,7 +158,7 @@ const render = () => {
 
       const a = document.createElement('a');
       a.href = post.link;
-      a.className = 'fw-bold';
+      a.className = !post.isRead ? 'fw-bold' : 'fw-normal';
       a.dataset.id = post.id;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
@@ -184,6 +185,9 @@ const render = () => {
       button.textContent = 'Просмотр';
       button.addEventListener('click', (e) => {
         fillModal(e);
+        console.log(e.target.dataId);
+        watchedState.posts.find((i) => i.id === e.target.getAttribute('data-id')).isRead = true;
+        render();
       });
       li.appendChild(button);
 
