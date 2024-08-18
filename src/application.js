@@ -87,7 +87,7 @@ const render = () => {
   inputUrlElement.value = watchedState.url;
   inputUrlElement.focus();
 
-  const fillFeedsContainer = () => {
+  const renderFeeds = () => {
     const feedsContainer = document.querySelector('.feeds');
     feedsContainer.innerHTML = '';
 
@@ -125,7 +125,7 @@ const render = () => {
     });
   };
 
-  const fillPostsContainer = () => {
+  const renderPosts = () => {
     const postsContainer = document.querySelector('.posts');
     postsContainer.innerHTML = '';
 
@@ -186,8 +186,8 @@ const render = () => {
     });
   };
 
-  fillFeedsContainer();
-  fillPostsContainer();
+  renderFeeds();
+  renderPosts();
 };
 
 const feedUpdater = () => {
