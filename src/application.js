@@ -31,12 +31,12 @@ const initializeEventHandlers = () => {
       .then(() => {
         const isDuplicate = state.feeds.some((feed) => feed.url === state.form.url);
         if (isDuplicate) {
-          const error = new Error();
+          const error = new Error('duplication');
           error.errors = 'duplication';
           throw error;
         }
       })
-      .then(handleUrl(state.form.url))
+      .then(() => handleUrl(state.form.url))
       .catch((err) => {
         state.form.feedback = err.errors;
       })

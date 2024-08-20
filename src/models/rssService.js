@@ -15,26 +15,27 @@ const getXml = (url) => fetch(`https://allorigins.hexlet.app/get?disableCache=tr
     throw error;
   });
 
-const handleUrl = (url) => getXml(url)
-  .then((data) => {
-    const parsedData = parseXml(data);
+const updateState = (data, url) => {
+  const feedToUpdate = state.feeds.find((feed) => feed.url === url);
 
-    const feedToUpdate = state.feeds.find((feed) => feed.url === url);
+  if (feedToUpdate) {
+    const currentLatestPubDate = feedToUpdate.latestPubDate;
+    feedToUpdate.latestPubDate = data.feed.latestPubDate;
 
-    if (feedToUpdate) {
-      const currentLatestPubDate = feedToUpdate.latestPubDate;
-      feedToUpdate.latestPubDate = parsedData.feed.latestPubDate;
-
-      const newPosts = parsedData.posts.filter((post) => post.pubDate > currentLatestPubDate);
-      if (newPosts.length !== 0) {
-        state.posts.push(...newPosts);
-      }
-    } else {
-      state.feeds.push(parsedData.feed);
-      state.posts.push(...parsedData.posts);
-      state.form.feedback = 'success';
-      state.form.url = '';
+    const newPosts = data.posts.filter((post) => post.pubDate > currentLatestPubDate);
+    if (newPosts.length !== 0) {
+      state.posts.push(...newPosts);
     }
-  });
+  } else {
+    state.feeds.push(data.feed);
+    state.posts.push(...data.posts);
+    state.form.feedback = 'success';
+    state.form.url = '';
+  }
+};
+
+const handleUrl = (url) => getXml(url)
+  .then((data) => parseXml(data))
+  .then((data) => updateState(data, url));
 
 export default handleUrl;
