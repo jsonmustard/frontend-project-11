@@ -3,24 +3,13 @@ import validate from './models/validation.js';
 import ru from './locales/ru.js';
 import state from './models/state.js';
 import handleUrl from './models/rssService.js';
-import {
-  renderFeeds, renderPosts, renderForm, renderModal,
-} from './views.js';
 
-const feedUpdater = () => {
+const updateFeeds = () => {
   const promises = state.feeds.map((feed) => handleUrl(feed.url));
-  Promise.all(promises)
-    .then(() => {
-      if (state.feeds.length !== 0) {
-        renderPosts(state);
-      }
-    })
-    .then(() => setTimeout(() => feedUpdater(), 5000));
+  Promise.all(promises).then(() => setTimeout(() => updateFeeds(), 5000));
 };
 
-feedUpdater();
-
-const app = () => {
+const initializeEventHandlers = () => {
   const inputUrlElement = document.getElementById('url-input');
   const submitButtonElement = document.getElementById('submit-button');
   const postsContainer = document.querySelector('.posts');
@@ -40,16 +29,14 @@ const app = () => {
 
     validate(state.form.url)
       .then(() => {
-        if (state.feeds.some((feed) => feed.url === state.form.url)) {
-          const error = new Error('duplication');
+        const isDuplicate = state.feeds.some((feed) => feed.url === state.form.url);
+        if (isDuplicate) {
+          const error = new Error();
           error.errors = 'duplication';
           throw error;
         }
       })
-      .then(() => handleUrl(state.form.url))
-      .then(() => renderForm(state))
-      .then(() => renderFeeds(state))
-      .then(() => renderPosts(state))
+      .then(handleUrl(state.form.url))
       .catch((err) => {
         state.form.feedback = err.errors;
       })
@@ -62,17 +49,15 @@ const app = () => {
     if (e.target.tagName === 'A') {
       const postId = e.target.dataset.id;
       state.posts.find((i) => i.id === postId).isRead = true;
-      renderPosts(state);
     } else if (e.target.tagName === 'BUTTON') {
       const postId = e.target.dataset.id;
-      renderModal(state, postId);
+      state.modal.postId = postId;
       state.posts.find((i) => i.id === postId).isRead = true;
-      renderPosts(state);
     }
   });
 };
 
-const runApp = () => {
+const app = () => {
   i18next
     .init({
       lng: 'ru',
@@ -81,7 +66,8 @@ const runApp = () => {
         ru,
       },
     })
-    .then(app());
+    .then(updateFeeds())
+    .then(initializeEventHandlers());
 };
 
-export default runApp;
+export default app;

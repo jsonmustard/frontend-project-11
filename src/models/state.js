@@ -1,5 +1,8 @@
 import onChange from 'on-change';
 import i18next from 'i18next';
+import {
+  renderFeeds, renderPosts, renderForm, renderModal,
+} from '../views.js';
 
 const state = {
   form: {
@@ -10,6 +13,9 @@ const state = {
   rss: {},
   feeds: [],
   posts: [],
+  modal: {
+    postId: null,
+  },
 };
 
 const urlInputElement = document.getElementById('url-input');
@@ -24,12 +30,27 @@ const setFeedbackStyles = (isValid) => {
 const watchedState = onChange(state, (path, value) => {
   switch (path) {
     case 'form.url':
+      renderForm(watchedState);
       break;
     case 'form.feedback':
       feedbackMessageElement.textContent = i18next.t(`${path}.${value}`);
       setFeedbackStyles(value === 'success');
       break;
+    case 'feeds':
+      renderFeeds(watchedState);
+      break;
+    case 'posts':
+      renderPosts(watchedState);
+      break;
+    case 'modal.postId':
+      if (value !== null) {
+        renderModal(watchedState, value);
+      }
+      break;
     default:
+      if (path.startsWith('posts.')) {
+        renderPosts(watchedState);
+      }
   }
 });
 
