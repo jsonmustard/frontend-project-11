@@ -1,5 +1,6 @@
 ### Hexlet tests and linter status:
 [![Actions Status](https://github.com/kirillzheltov/frontend-project-11/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/kirillzheltov/frontend-project-11/actions)
+[![student-check](https://github.com/jsonmustard/frontend-project-11/actions/workflows/student-check.yml/badge.svg)](https://github.com/jsonmustard/frontend-project-11/actions/workflows/student-check.yml)
 [![Maintainability](https://api.codeclimate.com/v1/badges/4a0f1a6149576a210d7f/maintainability)](https://codeclimate.com/github/jsonmustard/frontend-project-11/maintainability)
 
 # About
