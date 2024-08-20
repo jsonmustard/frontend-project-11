@@ -1,9 +1,12 @@
-import i18next from 'i18next';
 import onChange from 'on-change';
+import i18next from 'i18next';
 
 const state = {
-  url: '',
-  feedback: '',
+  form: {
+    isDisabled: false,
+    url: '',
+    feedback: '',
+  },
   rss: {},
   feeds: [],
   posts: [],
@@ -20,10 +23,10 @@ const setFeedbackStyles = (isValid) => {
 
 const watchedState = onChange(state, (path, value) => {
   switch (path) {
-    case 'url':
+    case 'form.url':
       break;
-    case 'feedback':
-      feedbackMessageElement.textContent = i18next.t(`form.${path}.${value}`);
+    case 'form.feedback':
+      feedbackMessageElement.textContent = i18next.t(`${path}.${value}`);
       setFeedbackStyles(value === 'success');
       break;
     default:

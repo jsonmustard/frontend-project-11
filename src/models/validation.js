@@ -2,14 +2,14 @@ import {
   object, string, setLocale,
 } from 'yup';
 
-setLocale({
-  string: {
-    url: 'invalidUrl',
-
-  },
-});
-
 export default (url) => {
+  setLocale({
+    string: {
+      url: 'invalidUrl',
+
+    },
+  });
+
   const userSchema = object({
     website: string().url(),
   });
