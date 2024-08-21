@@ -1,41 +1,37 @@
+import axios from 'axios';
 import parseXml from '../parser.js';
-import state from './state.js';
 
-const getXml = (url) => fetch(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
-  .then((response) => {
-    if (response.ok) {
-      return response.json();
-    }
-    return Promise.reject(new Error('Failed to fetch data'));
-  })
-  .then((data) => data.contents)
+const getXml = (url) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+  .then((response) => response.data.contents)
   .catch(() => {
-    const error = new Error('networkError');
+    const error = new Error('');
     error.errors = 'networkError';
     throw error;
   });
 
-const updateState = (data, url) => {
-  const feedToUpdate = state.feeds.find((feed) => feed.url === url);
+const updateState = (parsedXml, url, watchedState) => {
+  const feedToUpdate = watchedState.feeds.find((feed) => feed.url === url);
 
   if (feedToUpdate) {
     const currentLatestPubDate = feedToUpdate.latestPubDate;
-    feedToUpdate.latestPubDate = data.feed.latestPubDate;
+    feedToUpdate.latestPubDate = parsedXml.feed.latestPubDate;
 
-    const newPosts = data.posts.filter((post) => post.pubDate > currentLatestPubDate);
+    const newPosts = parsedXml.posts.filter((post) => post.pubDate > currentLatestPubDate);
     if (newPosts.length !== 0) {
-      state.posts.push(...newPosts);
+      watchedState.posts.push(...newPosts);
     }
   } else {
-    state.feeds.push(data.feed);
-    state.posts.push(...data.posts);
-    state.form.feedback = 'success';
-    state.form.url = '';
+    watchedState.feeds.push(parsedXml.feed);
+    watchedState.posts.push(...parsedXml.posts);
+    watchedState.form.feedback = 'success';
+    watchedState.form.url = '';
   }
 };
 
-const handleUrl = (url) => getXml(url)
-  .then((data) => parseXml(data))
-  .then((data) => updateState(data, url));
+const handleUrl = (url, watchedState) => getXml(url)
+  .then((xmlString) => {
+    const parsedXml = parseXml(xmlString, url);
+    updateState(parsedXml, url, watchedState);
+  });
 
 export default handleUrl;

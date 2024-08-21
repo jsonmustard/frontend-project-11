@@ -1,60 +1,77 @@
 import i18next from 'i18next';
 import validate from './models/validation.js';
 import ru from './locales/ru.js';
-import state from './models/state.js';
 import handleUrl from './models/rssService.js';
+import watch from './views.js';
 
-const updateFeeds = () => {
-  const promises = state.feeds.map((feed) => handleUrl(feed.url));
-  Promise.all(promises).then(() => setTimeout(() => updateFeeds(), 5000));
+const initialState = {
+  form: {
+    isDisabled: false,
+    url: '',
+    feedback: '',
+  },
+  rss: {},
+  feeds: [],
+  posts: [],
+  modal: {
+    postId: null,
+  },
+};
+
+const elements = {
+  inputUrlElement: document.getElementById('url-input'),
+  submitButtonElement: document.getElementById('submit-button'),
+  postsContainer: document.querySelector('.posts'),
+  feedsContainer: document.querySelector('.feeds'),
+  titleElement: document.querySelector('.modal-title'),
+  bodyElement: document.querySelector('.modal-body'),
+  linkElement: document.querySelector('.modal-footer > a'),
+  feedbackMessageElement: document.getElementById('feedback-message'),
 };
 
 const initializeEventHandlers = () => {
-  const inputUrlElement = document.getElementById('url-input');
-  const submitButtonElement = document.getElementById('submit-button');
-  const postsContainer = document.querySelector('.posts');
+  const watchedState = watch(elements, initialState);
 
-  inputUrlElement.addEventListener('change', () => {
-    state.form.url = inputUrlElement.value;
+  const updateFeeds = () => {
+    const promises = watchedState.feeds.map((feed) => handleUrl(feed.url, watchedState));
+    Promise.all(promises).finally(() => setTimeout(() => updateFeeds(), 5000));
+  };
+
+  elements.inputUrlElement.addEventListener('change', () => {
+    watchedState.form.url = elements.inputUrlElement.value;
   });
 
-  submitButtonElement.addEventListener('click', async (e) => {
-    if (!inputUrlElement.checkValidity()) {
+  elements.submitButtonElement.addEventListener('click', async (e) => {
+    if (!elements.inputUrlElement.checkValidity()) {
       return;
     }
 
     e.preventDefault();
 
-    state.form.isActive = false;
+    watchedState.form.isActive = false;
 
-    validate(state.form.url)
-      .then(() => {
-        const isDuplicate = state.feeds.some((feed) => feed.url === state.form.url);
-        if (isDuplicate) {
-          const error = new Error('duplication');
-          error.errors = 'duplication';
-          throw error;
-        }
-      })
-      .then(() => handleUrl(state.form.url))
+    validate(watchedState)
+      .then(() => handleUrl(watchedState.form.url, watchedState))
       .catch((err) => {
-        state.form.feedback = err.errors;
+        watchedState.form.feedback = err.errors;
       })
       .finally(() => {
-        state.form.isActive = true;
+        watchedState.form.isActive = true;
       });
   });
 
-  postsContainer.addEventListener('click', (e) => {
+  elements.postsContainer.addEventListener('click', (e) => {
     if (e.target.tagName === 'A') {
       const postId = e.target.dataset.id;
-      state.posts.find((i) => i.id === postId).isRead = true;
+      watchedState.posts.find((i) => i.id === postId).isRead = true;
     } else if (e.target.tagName === 'BUTTON') {
       const postId = e.target.dataset.id;
-      state.modal.postId = postId;
-      state.posts.find((i) => i.id === postId).isRead = true;
+      watchedState.modal.postId = postId;
+      watchedState.posts.find((i) => i.id === postId).isRead = true;
     }
   });
+
+  updateFeeds();
 };
 
 const app = () => {
@@ -66,8 +83,9 @@ const app = () => {
         ru,
       },
     })
-    .then(updateFeeds())
-    .then(initializeEventHandlers());
+    .then(() => {
+      initializeEventHandlers();
+    });
 };
 
 export default app;

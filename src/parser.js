@@ -1,7 +1,6 @@
 import _ from 'lodash';
-import state from './models/state.js';
 
-const parseXml = (xmlString) => {
+const parseXml = (xmlString, url) => {
   const parser = new DOMParser();
   const feedId = _.uniqueId();
   const parsedXml = parser.parseFromString(xmlString, 'text/xml');
@@ -9,7 +8,7 @@ const parseXml = (xmlString) => {
   const isError = parsedXml.querySelector('parsererror');
 
   if (isError) {
-    const error = new Error('invalidRss');
+    const error = new Error();
     error.errors = 'invalidRss';
     throw error;
   }
@@ -34,7 +33,7 @@ const parseXml = (xmlString) => {
 
   const feed = {
     id: feedId,
-    url: state.form.url,
+    url,
     title: feedTitle,
     description: feedDescription,
     latestPubDate,
